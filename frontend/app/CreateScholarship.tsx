@@ -16,7 +16,7 @@ export function CreateScholarship() {
     e.preventDefault();
     writeContract({
       address: `0x${contractAddress.substring(2)}`, // Wagmi requires the 0x prefix
-      abi: ContractInfo.abi,
+      abi: ContractInfo,
       functionName: 'createScholarship',
       args: [parseEther(amountPerSemester), criteria],
       value: parseEther(totalAmount), // This is how you send ETH with the transaction
@@ -43,7 +43,7 @@ export function CreateScholarship() {
           {isPending ? 'Confirming...' : 'Create Scholarship'}
         </button>
         {isSuccess && <p style={{ color: 'green' }}>Scholarship created successfully!</p>}
-        {error && <p style={{ color: 'red' }}>Error: {error.shortMessage}</p>}
+        {error && <p style={{ color: 'red' }}>Error: {error.message}</p>}
       </form>
     </div>
   );
