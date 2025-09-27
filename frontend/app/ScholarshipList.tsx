@@ -1,79 +1,84 @@
+// frontend/app/ScholarshipList.tsx
 'use client';
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
-// import ContractInfo from '../contracts/EduChainAutomate.json';
-import { formatEther } from 'viem';
-import { useEffect, useState } from 'react';
 import { contractAddress, contractAbi } from '../lib/contract';
-
-// const contractAddress = '0xDA0bab807633f07f013f94DD0E6A4F96F8742B53'; // Your address is here
+import { formatEther } from 'viem';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner"; // Import toast from sonner
 
 function ScholarshipCard({ id }: { id: bigint }) {
     const { address } = useAccount();
-    const { data: scholarship, isLoading, isError, error } = useReadContract({
-        address: `0x${contractAddress.substring(2)}`,
+    const { data: scholarship, isLoading, isError } = useReadContract({
+        address: contractAddress,
         abi: contractAbi,
         functionName: 'scholarships',
         args: [id],
-        watch:true
+        watch: true,
     });
 
-    const { writeContract, isPending } = useWriteContract();
+    const { writeContract, isPending } = useWriteContract({
+        onSuccess: () => {
+          toast.success("Success!", { description: "You have applied for the scholarship." });
+        },
+        onError: (error) => {
+          toast.error("Error", { description: error.shortMessage });
+        }
+    });
 
-    if (isLoading) return <div>Loading scholarship #{id.toString()}...</div>;
-    if (isError) return <div>Error loading scholarship: {error?.message}</div>;
+    if (isLoading) return <Card className="p-4">Loading scholarship...</Card>;
+    if (isError) return <Card className="p-4 text-red-500">Error loading scholarship.</Card>;
     if (!scholarship) return null;
 
-    // FIXED THIS LINE: Added 'id_from_contract' to correctly align the variables.
-    const [id_from_contract, donor, totalAmount, amountPerSemester, student, isClaimed, eligibilityCriteria] = scholarship as [bigint, string, bigint, bigint, string, boolean, string];
+    const [, donor, totalAmount, amountPerSemester, student, isClaimed, eligibilityCriteria] = scholarship as [bigint, string, bigint, bigint, string, boolean, string];
 
     const isMyScholarship = address && student.toLowerCase() === address.toLowerCase();
 
     return (
-        <div style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', background: isMyScholarship ? 'black' : 'black' }}>
-            <h3>Scholarship #{id.toString()}</h3>
-            <p><strong>Criteria:</strong> {eligibilityCriteria}</p>
-            <p><strong>Amount:</strong> {formatEther(amountPerSemester)} ETH per semester</p>
-            <p><strong>Remaining Funds:</strong> {formatEther(totalAmount)} ETH</p>
-            <p><strong>Status:</strong> {isClaimed ? `Claimed by ${student.slice(0,6)}...` : 'Available'}</p>
-            {!isClaimed && (
-                <button onClick={() => writeContract({ 
-                    address: `0x${contractAddress.substring(2)}`, 
-                    abi: contractAbi,
-                    functionName: 'applyForScholarship', 
-                    args: [id] 
-                })} disabled={isPending}>
-                    {isPending ? 'Applying...' : 'Apply Now'}
-                </button>
-            )}
-        </div>
+        <Card className={isMyScholarship ? "bg-green-950" : ""}>
+            <CardHeader>
+                <CardTitle>Scholarship #{id.toString()}</CardTitle>
+                <CardDescription>{eligibilityCriteria}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+                <p><strong>Amount:</strong> {formatEther(amountPerSemester)} ETH per semester</p>
+                <p><strong>Remaining Funds:</strong> {formatEther(totalAmount)} ETH</p>
+                <p><strong>Status:</strong> {isClaimed ? `Claimed by ${student.slice(0,6)}...${student.slice(-4)}` : 'Available'}</p>
+            </CardContent>
+            <CardFooter>
+                {!isClaimed && (
+                    <Button onClick={() => writeContract({ address: contractAddress, abi: contractAbi, functionName: 'applyForScholarship', args: [id] })} disabled={isPending}>
+                        {isPending ? 'Applying...' : 'Apply Now'}
+                    </Button>
+                )}
+            </CardFooter>
+        </Card>
     );
 }
 
-
 export function ScholarshipList() {
-  const { data: count, isLoading, isError, error } = useReadContract({
-    address: `0x${contractAddress.substring(2)}`,
+  const { data: count, isLoading, isError } = useReadContract({
+    address: contractAddress,
     abi: contractAbi,
     functionName: 'scholarshipCount',
     watch: true, 
   });
 
-  console.log("Scholarship Count Read:", { count, isLoading, isError, error });
-
-
-  if (isLoading) return <p>Loading scholarships...</p>;
-  if (isError) return <p>Could not fetch scholarships.</p>;
+  if (isLoading) return <p className="text-center mt-4">Loading scholarships...</p>;
+  if (isError) return <p className="text-center mt-4 text-red-500">Could not fetch scholarships.</p>;
 
   const numCount = typeof count === 'bigint' ? Number(count) : 0;
   const scholarshipIds = Array.from({ length: numCount }, (_, i) => BigInt(i + 1));
 
   return (
-    <div style={{ marginTop: '2rem' }}>
-      <h2>For Students: Available Scholarships</h2>
-      {scholarshipIds.length > 0 
-         ? scholarshipIds.map(id => <ScholarshipCard key={id.toString()} id={id} />) 
-         : <p>No scholarships created yet.</p>
-      }
+    <div className="mt-8">
+      <h2 className="text-2xl font-bold mb-4">For Students: Available Scholarships</h2>
+      <div className="space-y-4">
+        {scholarshipIds.length > 0 
+           ? scholarshipIds.map(id => <ScholarshipCard key={id.toString()} id={id} />) 
+           : <p className="text-center text-gray-500">No scholarships created yet.</p>
+        }
+      </div>
     </div>
   );
 }
