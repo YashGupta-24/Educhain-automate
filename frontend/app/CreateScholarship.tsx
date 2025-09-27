@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
-import ContractInfo from '../contracts/EduChainAutomate.json'; // Import the ABI
+// import ContractInfo from '../contracts/EduChainAutomate.json'; // Import the ABI
+import { contractAddress, contractAbi } from '../lib/contract';
 
 export function CreateScholarship() {
   const [criteria, setCriteria] = useState('');
@@ -10,13 +11,13 @@ export function CreateScholarship() {
   const [totalAmount, setTotalAmount] = useState('');
   const { writeContract, isPending, isSuccess, error } = useWriteContract();
 
-  const contractAddress = '0x11F5bf6943EAd671062e30f630F61D04b801dE5C';
+  // const contractAddress = '0xDA0bab807633f07f013f94DD0E6A4F96F8742B53';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     writeContract({
       address: `0x${contractAddress.substring(2)}`, // Wagmi requires the 0x prefix
-      abi: ContractInfo,
+      abi: contractAbi,
       functionName: 'createScholarship',
       args: [parseEther(amountPerSemester), criteria],
       value: parseEther(totalAmount), // This is how you send ETH with the transaction

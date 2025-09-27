@@ -1,16 +1,17 @@
 'use client';
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
-import ContractInfo from '../contracts/EduChainAutomate.json';
+// import ContractInfo from '../contracts/EduChainAutomate.json';
 import { formatEther } from 'viem';
 import { useEffect, useState } from 'react';
+import { contractAddress, contractAbi } from '../lib/contract';
 
-const contractAddress = '0x11F5bf6943EAd671062e30f630F61D04b801dE5C'; // Your address is here
+// const contractAddress = '0xDA0bab807633f07f013f94DD0E6A4F96F8742B53'; // Your address is here
 
 function ScholarshipCard({ id }: { id: bigint }) {
     const { address } = useAccount();
     const { data: scholarship, isLoading, isError, error } = useReadContract({
         address: `0x${contractAddress.substring(2)}`,
-        abi: ContractInfo,
+        abi: contractAbi,
         functionName: 'scholarships',
         args: [id],
         watch:true
@@ -37,7 +38,7 @@ function ScholarshipCard({ id }: { id: bigint }) {
             {!isClaimed && (
                 <button onClick={() => writeContract({ 
                     address: `0x${contractAddress.substring(2)}`, 
-                    abi: ContractInfo,
+                    abi: contractAbi,
                     functionName: 'applyForScholarship', 
                     args: [id] 
                 })} disabled={isPending}>
@@ -50,12 +51,15 @@ function ScholarshipCard({ id }: { id: bigint }) {
 
 
 export function ScholarshipList() {
-  const { data: count, isLoading, isError } = useReadContract({
+  const { data: count, isLoading, isError, error } = useReadContract({
     address: `0x${contractAddress.substring(2)}`,
-    abi: ContractInfo,
+    abi: contractAbi,
     functionName: 'scholarshipCount',
     watch: true, 
   });
+
+  console.log("Scholarship Count Read:", { count, isLoading, isError, error });
+
 
   if (isLoading) return <p>Loading scholarships...</p>;
   if (isError) return <p>Could not fetch scholarships.</p>;
